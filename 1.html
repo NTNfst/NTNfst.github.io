@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏱️ 暂停 · 标记 · 改名</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0b0f1c 0%, #1a1f33 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 1.5rem;
+            margin: 0;
+        }
+
+        .timer-container {
+            max-width: 780px;
+            width: 100%;
+            background: rgba(18, 22, 40, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 3.5rem;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(120, 160, 255, 0.15);
+            border: 1px solid rgba(80, 140, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+
+        h1 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            font-size: 1.8rem;
+            letter-spacing: -0.02em;
+            color: #d6e4ff;
+            text-shadow: 0 0 15px rgba(100, 160, 255, 0.5);
+            margin-bottom: 1.8rem;
+        }
+
+        h1 span {
+            font-size: 2rem;
+        }
+
+        .clock-panel {
+            background: #0c101e;
+            border-radius: 2.5rem;
+            padding: 1.8rem 1rem;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 5px 8px rgba(0, 0, 0, 0.8), 0 2px 4px rgba(255, 255, 255, 0.02);
+            border: 1px solid #2c3550;
+            position: relative;
+        }
+
+        .live-time {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+            font-size: 4rem;
+            font-weight: 600;
+            text-align: center;
+            color: #a8d0ff;
+            letter-spacing: 6px;
+            text-shadow: 0 0 20px #3f7eff, 0 0 5px #1e3a8a;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        .live-date {
+            text-align: center;
+            color: #7e8aa8;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            margin-top: 0.4rem;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+
+        .elapsed-badge {
+            position: absolute;
+            bottom: -0.8rem;
+            right: 1.5rem;
+            background: #1e2b4a;
+            border-radius: 2rem;
+            padding: 0.4rem 1.3rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #aac2ff;
+            border: 1px solid #345394;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.5px;
+        }
+
+        .elapsed-badge i {
+            font-style: normal;
+            font-size: 1rem;
+        }
+
+        /* 控制按钮区域 */
+        .control-row {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+            flex-wrap: wrap;
+        }
+
+        .ctrl-btn {
+            background: #1a2338;
+            border: 1px solid #2f4166;
+            border-radius: 3rem;
+            padding: 0.7rem 1.8rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #b8ccff;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .ctrl-btn:hover {
+            background: #222f4d;
+            border-color: #4f72b0;
+            color: #d6e4ff;
+            transform: translateY(-1px);
+        }
+
+        .ctrl-btn:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .ctrl-btn.primary {
+            background: linear-gradient(135deg, #2a4a8a, #1a3a6a);
+            border-color: #5a7ec0;
+            color: #eef4ff;
+        }
+
+        .ctrl-btn.primary:hover {
+            background: linear-gradient(135deg, #3a5ea0, #2a4a80);
+            border-color: #7a9ee0;
+        }
+
+        .ctrl-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+            pointer-events: none;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2.2rem;
+        }
+
+        .label-sm {
+            color: #8e9fc0;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-left: 0.5rem;
+            margin-bottom: 0.2rem;
+            text-transform: uppercase;
+        }
+
+        .mark-input-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: #0f1422;
+            border-radius: 4rem;
+            padding: 0.3rem 0.3rem 0.3rem 1.5rem;
+            border: 1px solid #2d3b5a;
+            transition: border 0.2s, box-shadow 0.2s;
+        }
+
+        .mark-input-group:focus-within {
+            border-color: #4f8eff;
+            box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.3);
+        }
+
+        .mark-input-group input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.9rem 0;
+            font-size: 1rem;
+            color: #e2ecff;
+            outline: none;
+            font-weight: 400;
+        }
+
+        .mark-input-group input::placeholder {
+            color: #4f5f7a;
+            font-weight: 300;
+            font-style: italic;
+        }
+
+        .mark-btn {
+            background: linear-gradient(135deg, #3f7eff, #1e4fcc);
+            border: none;
+            border-radius: 3rem;
+            padding: 0.9rem 1.8rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            box-shadow: 0 8px 18px -6px #1e3a8a;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .mark-btn:hover {
+            background: linear-gradient(135deg, #5a8eff, #2a5fd9);
+            transform: scale(1.02);
+            box-shadow: 0 12px 22px -6px #2b5fd0;
+        }
+
+        .mark-btn:active {
+            transform: scale(0.98);
+        }
+
+        .mark-btn i {
+            font-size: 1.2rem;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+        }
+
+        .reset-btn {
+            background: transparent;
+            border: 1px solid #2f3d5c;
+            border-radius: 3rem;
+            padding: 0.6rem 1.2rem;
+            color: #96a9d1;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-left: auto;
+            margin-right: 0.3rem;
+        }
+
+        .reset-btn:hover {
+            background: #1a2338;
+            border-color: #4f6aa0;
+            color: #c0d2ff;
+        }
+
+        .marks-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 1rem;
+            padding: 0 0.3rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .marks-header h2 {
+            color: #b8caf0;
+            font-size: 1.2rem;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .marks-count {
+            background: #1f2a44;
+            padding: 0.25rem 0.8rem;
+            border-radius: 3rem;
+            font-size: 0.8rem;
+            color: #9bb6ee;
+            font-weight: 500;
+            border: 1px solid #32426b;
+        }
+
+        .clear-btn {
+            background: transparent;
+            border: 1px solid #374a70;
+            color: #8c9fc7;
+            border-radius: 2rem;
+            padding: 0.4rem 1.2rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .clear-btn:hover {
+            background: #1f2a44;
+            border-color: #5a6f9c;
+            color: #c2d2ff;
+        }
+
+        .marks-list {
+            max-height: 380px;
+            overflow-y: auto;
+            padding-right: 0.4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .marks-list::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .marks-list::-webkit-scrollbar-track {
+            background: #101624;
+            border-radius: 10px;
+        }
+
+        .marks-list::-webkit-scrollbar-thumb {
+            background: #2f3e60;
+            border-radius: 10px;
+        }
+
+        .mark-card {
+            background: #121a2c;
+            border-radius: 1.6rem;
+            padding: 1rem 1.3rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #25304b;
+            transition: all 0.15s ease;
+            animation: fadeIn 0.25s ease;
+            backdrop-filter: blur(4px);
+            gap: 0.5rem;
+        }
+
+        .mark-card:hover {
+            border-color: #4d70b0;
+            background: #162032;
+            box-shadow: 0 6px 14px rgba(0, 20, 60, 0.5);
+        }
+
+        .mark-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .mark-name-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .mark-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #d0e0ff;
+            word-break: break-word;
+            line-height: 1.3;
+            letter-spacing: -0.2px;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .edit-name-btn {
+            background: transparent;
+            border: none;
+            color: #6b85b0;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 0.2rem 0.4rem;
+            border-radius: 1rem;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        .edit-name-btn:hover {
+            color: #aac2ff;
+            background: #1f2a44;
+        }
+
+        .mark-elapsed {
+            background: #1b2b4b;
+            padding: 0.15rem 0.8rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #b8d0ff;
+            border: 1px solid #345394;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+
+        .mark-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #8096c0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .mark-time span {
+            background: #1f2a44;
+            padding: 0.15rem 0.6rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            border: 1px solid #2e3d5f;
+            color: #b0c6f0;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: #5b6f95;
+            font-size: 1.4rem;
+            cursor: pointer;
+            width: 2.2rem;
+            height: 2.2rem;
+            border-radius: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            flex-shrink: 0;
+            font-weight: 300;
+            line-height: 1;
+        }
+
+        .delete-btn:hover {
+            background: #2a1f2e;
+            color: #ff7b7b;
+            transform: scale(1.05);
+        }
+
+        /* 内联编辑输入框 */
+        .edit-name-input {
+            background: #0f1422;
+            border: 1px solid #4f8eff;
+            border-radius: 0.8rem;
+            padding: 0.5rem 0.8rem;
+            font-size: 1rem;
+            color: #e2ecff;
+            font-weight: 500;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.25);
+            width: 100%;
+            max-width: 240px;
+            font-family: inherit;
+        }
+
+        .edit-actions {
+            display: flex;
+            gap: 0.3rem;
+            align-items: center;
+        }
+
+        .edit-save, .edit-cancel {
+            background: transparent;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.8rem;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .edit-save {
+            color: #6effa0;
+        }
+
+        .edit-save:hover {
+            background: #1a3328;
+            color: #a0ffc0;
+        }
+
+        .edit-cancel {
+            color: #ff8a8a;
+        }
+
+        .edit-cancel:hover {
+            background: #331a1a;
+            color: #ffb0b0;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #4a5b7c;
+            padding: 2rem 1rem;
+            font-style: italic;
+            border: 1px dashed #27324b;
+            border-radius: 2rem;
+            background: #0d1322;
+            font-size: 0.95rem;
+            letter-spacing: 0.3px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 580px) {
+            .timer-container {
+                padding: 1.8rem 1.2rem;
+                border-radius: 2rem;
+            }
+
+            .live-time {
+                font-size: 2.6rem;
+                letter-spacing: 3px;
+            }
+
+            .elapsed-badge {
+                bottom: -0.7rem;
+                right: 1rem;
+                padding: 0.3rem 1rem;
+                font-size: 0.75rem;
+            }
+
+            .control-row {
+                gap: 0.6rem;
+            }
+
+            .ctrl-btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.85rem;
+            }
+
+            .mark-input-group {
+                flex-direction: column;
+                background: transparent;
+                padding: 0;
+                gap: 0.7rem;
+                border: none;
+            }
+
+            .mark-input-group input {
+                background: #0f1422;
+                border-radius: 3rem;
+                padding: 1rem 1.5rem;
+                border: 1px solid #2d3b5a;
+                width: 100%;
+            }
+
+            .mark-input-group input:focus {
+                border-color: #4f8eff;
+                box-shadow: 0 0 0 3px rgba(79, 142, 255, 0.25);
+            }
+
+            .mark-btn {
+                justify-content: center;
+                padding: 0.9rem 1.8rem;
+                width: 100%;
+            }
+
+            .mark-card {
+                padding: 0.9rem 1rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .mark-name {
+                font-size: 1rem;
+            }
+
+            .reset-btn {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="timer-container">
+        <h1>
+            <span>⏱️</span> 从零开始 · 暂停 · 改名
+        </h1>
+
+        <!-- 主计时器 -->
+        <div class="clock-panel">
+            <div class="live-time" id="liveTime">00:00:00</div>
+            <div class="live-date" id="liveDate">---</div>
+            <div class="elapsed-badge" id="elapsedBadge">
+                <i>⏳</i> 计时中 <span id="elapsedDisplay">00:00:00</span>
+            </div>
+        </div>
+
+        <!-- 暂停 / 继续 / 重置 控制栏 -->
+        <div class="control-row">
+            <button class="ctrl-btn primary" id="pauseToggleBtn">
+                <span>⏸️</span> 暂停
+            </button>
+            <button class="ctrl-btn" id="resetTimerBtn">
+                <span>🔄</span> 重置计时器
+            </button>
+        </div>
+
+        <!-- 命名 & 标记输入区 -->
+        <div class="input-section">
+            <div class="label-sm">🏷️ 为此刻命名 & 标记时长</div>
+            <div class="mark-input-group">
+                <input type="text" id="markNameInput" placeholder="例如：会议开始、灵感闪现、休息一下…" maxlength="40" autocomplete="off">
+                <button class="mark-btn" id="markBtn">
+                    <i>📌</i> 标记
+                </button>
+            </div>
+        </div>
+
+        <!-- 标记记录列表 -->
+        <div class="marks-header">
+            <h2>
+                <span>📋</span> 时间标记
+                <span class="marks-count" id="marksCount">0</span>
+            </h2>
+            <button class="clear-btn" id="clearAllBtn">
+                <span>🗑️</span> 清空全部
+            </button>
+        </div>
+
+        <div class="marks-list" id="marksList">
+            <div class="empty-message">还没有标记，为此刻命名吧 ✨</div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- 核心状态 ----------
+            // 计时器起始时间（毫秒时间戳）— 表示“计时开始”的真实时刻
+            let timerStartTime = Date.now();
+            // 已累积的毫秒数（暂停前累计）
+            let accumulatedMs = 0;
+            // 计时器是否正在运行
+            let isRunning = true;
+            // 暂停时的时间戳（用于继续时计算）
+            let pauseTime = null;
+            // 界面刷新定时器
+            let clockInterval = null;
+
+            // 标记数组
+            let marks = [];
+
+            // 当前正在编辑的标记ID (null 表示没有编辑)
+            let editingMarkId = null;
+
+            // DOM 元素
+            const liveTimeEl = document.getElementById('liveTime');
+            const liveDateEl = document.getElementById('liveDate');
+            const elapsedDisplay = document.getElementById('elapsedDisplay');
+            const elapsedBadge = document.getElementById('elapsedBadge');
+            const markNameInput = document.getElementById('markNameInput');
+            const markBtn = document.getElementById('markBtn');
+            const marksListEl = document.getElementById('marksList');
+            const marksCountEl = document.getElementById('marksCount');
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            const resetTimerBtn = document.getElementById('resetTimerBtn');
+            const pauseToggleBtn = document.getElementById('pauseToggleBtn');
+
+            // ---------- 时间格式化工具 ----------
+            function formatElapsed(ms) {
+                const totalSeconds = Math.floor(ms / 1000);
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = totalSeconds % 60;
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+
+            function formatMarkTime(timestamp) {
+                const d = new Date(timestamp);
+                const year = d.getFullYear();
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                const hours = String(d.getHours()).padStart(2, '0');
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const seconds = String(d.getSeconds()).padStart(2, '0');
+                return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`;
+            }
+
+            function getTimeOnly(timestamp) {
+                const d = new Date(timestamp);
+                return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+            }
+
+            function escapeHtml(unsafe) {
+                if (!unsafe) return '';
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            // ---------- 获取当前计时器已过毫秒数（核心）----------
+            function getCurrentElapsedMs() {
+                if (isRunning) {
+                    // 运行中：已累积 + (现在 - 本次启动时刻)
+                    return accumulatedMs + (Date.now() - timerStartTime);
+                } else {
+                    // 暂停中：直接返回累积值（暂停时暂停时刻不增加）
+                    return accumulatedMs;
+                }
+            }
+
+            // ---------- 保存 & 加载标记 ----------
+            function saveMarks() {
+                try {
+                    localStorage.setItem('timer_marks_v3', JSON.stringify(marks));
+                } catch (e) {
+                    console.warn('保存标记失败', e);
+                }
+            }
+
+            function loadMarks() {
+                try {
+                    const stored = localStorage.getItem('timer_marks_v3');
+                    if (stored) {
+                        marks = JSON.parse(stored);
+                        if (!Array.isArray(marks)) marks = [];
+                    } else {
+                        marks = [];
+                    }
+                } catch (e) {
+                    console.warn('读取标记失败', e);
+                    marks = [];
+                }
+                renderMarks();
+            }
+
+            // ---------- 更新界面（时钟 + 已过时间 + 暂停按钮状态）----------
+            function updateClockAndElapsed() {
+                const now = new Date();
+                // 显示当前时间
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                liveTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+                const weekday = weekdays[now.getDay()];
+                liveDateEl.textContent = `${year}.${month}.${day} ${weekday}`;
+
+                // 更新已过时长显示
+                const elapsedMs = getCurrentElapsedMs();
+                elapsedDisplay.textContent = formatElapsed(elapsedMs);
+
+                // 更新暂停按钮状态文字
+                if (isRunning) {
+                    pauseToggleBtn.innerHTML = '<span>⏸️</span> 暂停';
+                    elapsedBadge.innerHTML = `<i>⏳</i> 计时中 <span id="elapsedDisplay">${formatElapsed(elapsedMs)}</span>`;
+                } else {
+                    pauseToggleBtn.innerHTML = '<span>▶️</span> 继续';
+                    elapsedBadge.innerHTML = `<i>⏸️</i> 已暂停 <span id="elapsedDisplay">${formatElapsed(elapsedMs)}</span>`;
+                }
+
+                // 重新获取 elapsedDisplay 引用（因为 innerHTML 重写了）
+                // 不需要额外操作，因为上面直接重新设置了内容
+            }
+
+            function startClock() {
+                if (clockInterval) clearInterval(clockInterval);
+                updateClockAndElapsed();
+                clockInterval = setInterval(updateClockAndElapsed, 200);
+            }
+
+            // ---------- 暂停 / 继续 ----------
+            function togglePause() {
+                if (isRunning) {
+                    // 暂停：累积当前已过时间，设置标志
+                    accumulatedMs = getCurrentElapsedMs();
+                    isRunning = false;
+                    pauseTime = Date.now();
+                } else {
+                    // 继续：以当前时刻为新的起点，继续累计
+                    timerStartTime = Date.now();
+                    isRunning = true;
+                    pauseTime = null;
+                }
+                // 立即刷新界面
+                updateClockAndElapsed();
+            }
+
+            // ---------- 重置计时器（清空标记并归零）----------
+            function resetTimer() {
+                if (marks.length > 0) {
+                    if (!confirm('重置计时器将同时清空所有时间标记，确定要继续吗？')) {
+                        return;
+                    }
+                }
+                // 重置状态
+                accumulatedMs = 0;
+                timerStartTime = Date.now();
+                isRunning = true;
+                pauseTime = null;
+                marks = [];
+                editingMarkId = null;
+                saveMarks();
+                renderMarks();
+                updateClockAndElapsed();
+                // 更新暂停按钮文字
+                pauseToggleBtn.innerHTML = '<span>⏸️</span> 暂停';
+            }
+
+            // ---------- 渲染标记列表 ----------
+            function renderMarks() {
+                marksCountEl.textContent = marks.length;
+
+                if (marks.length === 0) {
+                    marksListEl.innerHTML = '<div class="empty-message">还没有标记，为此刻命名吧 ✨</div>';
+                    return;
+                }
+
+                // 按时间倒序
+                const sortedMarks = [...marks].sort((a, b) => b.timestamp - a.timestamp);
+
+                let html = '';
+                sortedMarks.forEach((mark) => {
+                    const formattedTime = formatMarkTime(mark.timestamp);
+                    const timeOnly = getTimeOnly(mark.timestamp);
+                    // 标记时刻相对于计时起点的时长
+                    // 注意：标记记录的是真实时间戳，所以时长 = mark.timestamp - 计时开始时刻(真实)
+                    // 但因为我们有暂停机制，标记时长应该基于“计时器显示的时间”还是“真实世界时间”？
+                    // 根据需求“显示每一个标记时间的时长”，通常理解为：从计时开始到标记那一刻，计时器上显示的时间长度。
+                    // 但标记是在真实时间发生的，如果计时器暂停期间标记，时长不增加？还是增加？
+                    // 合理做法：标记的时长应该是从计时开始（第一次启动）到标记时刻，计时器所累积的时间。
+                    // 但暂停期间，计时器累积时间不变，所以标记时长应该等于暂停前的累积值。
+                    // 因此我们不应该用 mark.timestamp - timerStartTime，而是需要记录每个标记时刻的累积时长。
+                    // 需要修改数据结构：在添加标记时存储当时的累积时长。
+                    // 为了保证兼容性，如果旧数据没有 elapsedAtMark 字段，则用当前逻辑回退。
+                    
+                    // 修改：现在我们在添加标记时会存入 elapsedMsAtMark。
+                    // 这里显示时优先用那个字段。
+                    let elapsedMs;
+                    if (mark.elapsedMsAtMark !== undefined) {
+                        elapsedMs = mark.elapsedMsAtMark;
+                    } else {
+                        // 兼容旧数据：粗略计算（可能不准确），假设没有暂停
+                        elapsedMs = mark.timestamp - timerStartTime;
+                    }
+                    const elapsedFormatted = formatElapsed(elapsedMs);
+                    const safeName = escapeHtml(mark.name);
+                    
+                    // 判断是否正在编辑此标记
+                    const isEditing = (editingMarkId === mark.id);
+
+                    html += `
+                        <div class="mark-card" data-id="${mark.id}">
+                            <div class="mark-info">
+                                <div class="mark-name-row">
+                                    ${isEditing ? 
+                                        `<input type="text" class="edit-name-input" id="edit-input-${mark.id}" value="${safeName}" maxlength="40" autocomplete="off">` : 
+                                        `<div class="mark-name">${safeName} <button class="edit-name-btn" data-id="${mark.id}" title="编辑名称">✏️</button></div>`
+                                    }
+                                    <div class="mark-elapsed" title="从计时开始到标记时刻的时长">⏱ +${elapsedFormatted}</div>
+                                </div>
+                                <div class="mark-time">
+                                    <span>🕒 ${timeOnly}</span>
+                                    ${formattedTime}
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.2rem;">
+                                ${isEditing ? 
+                                    `<div class="edit-actions">
+                                        <button class="edit-save" data-id="${mark.id}" title="保存">✅</button>
+                                        <button class="edit-cancel" data-id="${mark.id}" title="取消">❌</button>
+                                    </div>` : 
+                                    ''
+                                }
+                                <button class="delete-btn" data-id="${mark.id}" title="删除标记">✕</button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                marksListEl.innerHTML = html;
+
+                // 绑定事件（因为 innerHTML 重写，需要重新绑定所有按钮）
+                // 编辑名称按钮
+                document.querySelectorAll('.edit-name-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = Number(btn.getAttribute('data-id'));
+                        startEditing(id);
+                    });
+                });
+
+                // 保存编辑
+                document.querySelectorAll('.edit-save').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = Number(btn.getAttribute('data-id'));
+                        saveEditedName(id);
+                    });
+                });
+
+                // 取消编辑
+                document.querySelectorAll('.edit-cancel').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        cancelEditing();
+                    });
+                });
+
+                // 删除按钮
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = Number(btn.getAttribute('data-id'));
+                        deleteMarkById(id);
+                    });
+                });
+
+                // 如果正在编辑，自动聚焦输入框
+                if (editingMarkId !== null) {
+                    const input = document.getElementById(`edit-input-${editingMarkId}`);
+                    if (input) {
+                        input.focus();
+                        input.select();
+                        // 绑定回车保存和ESC取消
+                        input.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                saveEditedName(editingMarkId);
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                cancelEditing();
+                            }
+                        });
+                    }
+                }
+            }
+
+            // ---------- 编辑名称相关 ----------
+            function startEditing(id) {
+                // 如果已有编辑，先取消
+                if (editingMarkId !== null) {
+                    cancelEditing();
+                }
+                editingMarkId = id;
+                renderMarks();
+            }
+
+            function saveEditedName(id) {
+                const input = document.getElementById(`edit-input-${id}`);
+                if (!input) return;
+                const newName = input.value.trim() || '未命名时刻';
+                const mark = marks.find(m => m.id === id);
+                if (mark) {
+                    mark.name = newName;
+                    saveMarks();
+                }
+                editingMarkId = null;
+                renderMarks();
+            }
+
+            function cancelEditing() {
+                editingMarkId = null;
+                renderMarks();
+            }
+
+            // ---------- 删除标记 ----------
+            function deleteMarkById(id) {
+                if (editingMarkId === id) {
+                    editingMarkId = null;
+                }
+                marks = marks.filter(mark => mark.id !== id);
+                saveMarks();
+                renderMarks();
+            }
+
+            // ---------- 添加标记 ----------
+            function addMark() {
+                let name = markNameInput.value.trim();
+                if (name === '') {
+                    name = '未命名时刻';
+                }
+
+                const id = Date.now() + Math.floor(Math.random() * 10000);
+                const timestamp = Date.now();
+                // 记录当前计时器累积的时长（毫秒）作为标记时长
+                const elapsedMsAtMark = getCurrentElapsedMs();
+
+                marks.push({
+                    id,
+                    name,
+                    timestamp,
+                    elapsedMsAtMark   // 关键：存储标记时刻的累积时长
+                });
+
+                saveMarks();
+                renderMarks();
+
+                markNameInput.value = '';
+                markNameInput.focus();
+
+                // 如果正在编辑其他标记，取消编辑状态
+                if (editingMarkId !== null) {
+                    editingMarkId = null;
+                }
+                renderMarks(); // 刷新
+            }
+
+            // ---------- 清空全部标记 ----------
+            function clearAllMarks() {
+                if (marks.length === 0) return;
+                if (confirm('确定要删除所有时间标记吗？此操作不可撤销。')) {
+                    marks = [];
+                    editingMarkId = null;
+                    saveMarks();
+                    renderMarks();
+                }
+            }
+
+            // ---------- 初始化 ----------
+            function init() {
+                // 重置按钮
+                resetTimerBtn.onclick = resetTimer;
+
+                // 暂停/继续按钮
+                pauseToggleBtn.onclick = togglePause;
+
+                // 加载标记
+                loadMarks();
+
+                // 启动时钟
+                startClock();
+
+                // 绑定添加标记事件
+                markBtn.addEventListener('click', addMark);
+                markNameInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addMark();
+                    }
+                });
+                clearAllBtn.addEventListener('click', clearAllMarks);
+
+                // 聚焦输入框
+                markNameInput.focus();
+            }
+
+            // 启动
+            init();
+        })();
+    </script>
+</body>
+</html>
